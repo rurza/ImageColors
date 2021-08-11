@@ -108,25 +108,21 @@ struct Pixel: Hashable {
         )
     }
 
-    // Ref: https://en.wikipedia.org/wiki/HSL_and_HSV
-    func withMinimalSaturation(_ sat: Double) -> Self {
-
-        let red = Double(red / UInt8.max)
-        let green = Double(green / UInt8.max)
-        let blue = Double(blue / UInt8.max)
-
+    func toHSB() -> (hue: Double, saturation: Double, brightness: Double) {
+        let red = Double(red) / Double(UInt8.max)
+        let green = Double(green) / Double(UInt8.max)
+        let blue = Double(blue) / Double(UInt8.max)
 
         var hue, saturation, brightness: Double
 
         let maximum = max(red, green, blue)
-        var chroma = maximum - min(red, green, blue)
+        let chroma = maximum - min(red, green, blue)
 
+        // https://en.wikipedia.org/wiki/HSL_and_HSV#Lightness
         brightness = maximum
-        saturation = brightness == 0 ? 0 : chroma / brightness
 
-        if sat <= saturation {
-            return self
-        }
+        // https://en.wikipedia.org/wiki/HSL_and_HSV#Saturation
+        saturation = brightness == 0 ? 0 : chroma / brightness
 
         if chroma == 0 {
             hue = 0
@@ -142,8 +138,18 @@ struct Pixel: Hashable {
             hue += 6
         }
 
+        return (hue: hue, saturation: saturation, brightness: brightness)
+    }
+
+    // Ref: https://en.wikipedia.org/wiki/HSL_and_HSV
+    func newWithSaturation(_ sat: Double) -> Self {
+
+        let (hue, saturation, brightness) = toHSB()
+
+        guard saturation >= sat else { return self }
+
         // Back to RGB
-        chroma = brightness * sat
+        let chroma = brightness * sat
         let secondLargestComponent = chroma * (1 - fabs(fmod(hue, 2) - 1))
         var newRed, newGreen, newBlue: Double
 
@@ -179,9 +185,9 @@ struct Pixel: Hashable {
         }
         let match = brightness - chroma
 
-        newRed = floor(newRed + match) * 255
-        newGreen = floor(newGreen + match) * 255
-        newBlue = floor(newBlue + match) * 255
+        newRed = round((newRed + match) * 255)
+        newGreen = round((newGreen + match) * 255)
+        newBlue = round((newBlue + match) * 255)
         return Self(red: UInt8(newRed), green: UInt8(newGreen), blue: UInt8(newBlue))
     }
 
@@ -315,7 +321,7 @@ public extension CGImage {
         let isBackgroundIsLight = !background.isDarkColor
         sortedColors = imageColors.keys
             .compactMap { pixel in
-                let darkerPixel = pixel.withMinimalSaturation(0.15)
+                let darkerPixel = pixel.newWithSaturation(0.15)
                 if darkerPixel.isDarkColor == isBackgroundIsLight {
                     let count = imageColors[pixel]!
                     return ImageColorsCounter(color: darkerPixel, count: count)

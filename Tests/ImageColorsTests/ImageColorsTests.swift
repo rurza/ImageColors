@@ -11,7 +11,7 @@ final class ImageColorsTests: XCTestCase {
 
     func testExtractingColorsFromImage1() throws {
         let cgImage1 = cgImageForImageNamed("1")
-        let colors1 = try cgImage1.extractColors()
+        let colors1 = try cgImage1._extractColors()
         XCTAssertEqual(colors1.background.redComponent, 255.0/255)
         XCTAssertEqual(colors1.background.greenComponent, 246.0/255)
         XCTAssertEqual(colors1.background.blueComponent, 1.0/255)
@@ -28,7 +28,7 @@ final class ImageColorsTests: XCTestCase {
 
     func testExtractingColorsFromImage2() throws {
         let cgImage2 = cgImageForImageNamed("2")
-        let colors2 = try cgImage2.extractColors()
+        let colors2 = try cgImage2._extractColors()
         XCTAssertEqual(colors2.background.redComponent, 52.0/255)
         XCTAssertEqual(colors2.background.greenComponent, 198.0/255)
         XCTAssertEqual(colors2.background.blueComponent, 88.0/255)
@@ -45,7 +45,7 @@ final class ImageColorsTests: XCTestCase {
 
     func testExtractingColorsFromImage3() throws {
         let cgImage3 = cgImageForImageNamed("3")
-        let colors3 = try cgImage3.extractColors()
+        let colors3 = try cgImage3._extractColors()
         XCTAssertEqual(colors3.background.redComponent, 10.0/255)
         XCTAssertEqual(colors3.background.greenComponent, 122.0/255)
         XCTAssertEqual(colors3.background.blueComponent, 255.0/255)
@@ -62,7 +62,7 @@ final class ImageColorsTests: XCTestCase {
 
     func testExtractingColorsFromImage4() throws {
         let cgImage4 = cgImageForImageNamed("4")
-        let colors4 = try cgImage4.extractColors()
+        let colors4 = try cgImage4._extractColors()
         XCTAssertEqual(colors4.background.redComponent, 255.0/255)
         XCTAssertEqual(colors4.background.greenComponent, 255.0/255)
         XCTAssertEqual(colors4.background.blueComponent, 255.0/255)

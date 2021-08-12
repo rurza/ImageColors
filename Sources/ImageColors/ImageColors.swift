@@ -70,7 +70,27 @@ private struct ImageColorsCounter: Comparable, Equatable {
 
 public extension CGImage {
 
-    func extractColors(withQuality quality: ImageExtractQuality = .original) throws -> ImageColors {
+    @available(iOS 15, OSX 12.0, tvOS 15, *)
+    func extractColors(withQuality quality: ImageExtractQuality = .original, taskPriority: TaskPriority = .utility) async throws -> ImageColors {
+        try _extractColors(withQuality: quality)
+    }
+
+    func extractColors(withQuality quality: ImageExtractQuality = .original, queue: DispatchQueue, handler: @escaping (Result<ImageColors, Error>) -> Void) {
+        queue.async {
+            do {
+                let colors = try self._extractColors(withQuality: quality)
+                DispatchQueue.main.async {
+                    handler(.success(colors))
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    handler(.failure(error))
+                }
+            }
+        }
+    }
+
+    internal func _extractColors(withQuality quality: ImageExtractQuality = .original) throws -> ImageColors {
         let expectedImageFormat = vImage_CGImageFormat(
             bitsPerComponent: 8,
             bitsPerPixel: 32,
@@ -134,7 +154,7 @@ public extension CGImage {
 
         data.deinitialize(count: capacity)
 
-        let threshold = Int(CGFloat(height) * CGFloat(width) * 0.05)
+        let threshold = Int(CGFloat(height) * CGFloat(width) * 0.01)
         var sortedColors: [ImageColorsCounter] = imageColors.keys
             .compactMap { pixel in
                 let count = imageColors[pixel]!
@@ -171,7 +191,9 @@ public extension CGImage {
         sortedColors = imageColors.keys
             .compactMap { pixel in
                 let count = imageColors[pixel]!
-                if isBackgroundIsLight {
+                if pixel.isContrastingTo(background) {
+                    return ImageColorsCounter(pixel: pixel, count: count)
+                } else if isBackgroundIsLight {
                     if pixel.isDarkColor {
                         return ImageColorsCounter(pixel: pixel, count: count)
                     }

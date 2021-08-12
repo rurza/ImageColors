@@ -71,7 +71,7 @@ private struct ImageColorsCounter: Comparable, Equatable {
 public extension CGImage {
 
     @available(iOS 15, OSX 12.0, tvOS 15, *)
-    func extractColors(withQuality quality: ImageExtractQuality = .original, taskPriority: TaskPriority = .utility) async throws -> ImageColors {
+    func extractColors(withQuality quality: ImageExtractQuality = .original) async throws -> ImageColors {
         try _extractColors(withQuality: quality)
     }
 

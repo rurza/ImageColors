@@ -23,10 +23,10 @@ public enum ImageColorsError: Error {
 }
 
 public struct ImageColors {
-    public let background: ImageColor
-    public let primary: ImageColor?
-    public let secondary: ImageColor?
-    public let tertiary: ImageColor?
+    public let background: Pixel
+    public let primary: Pixel?
+    public let secondary: Pixel?
+    public let tertiary: Pixel?
 }
 
 public enum ImageExtractQuality: CGFloat {
@@ -228,10 +228,10 @@ public extension CGImage {
             if primary != nil && secondary != nil && tertiary != nil { break }
         }
 
-        return ImageColors(background: background.imageColor,
-                           primary: primary?.imageColor,
-                           secondary: secondary?.imageColor,
-                           tertiary: tertiary?.imageColor)
+        return ImageColors(background: background,
+                           primary: primary,
+                           secondary: secondary,
+                           tertiary: tertiary)
     }
 
 }

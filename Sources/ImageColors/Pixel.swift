@@ -6,11 +6,11 @@
 
 import Foundation
 
-struct Pixel: Hashable, Equatable {
+public struct Pixel: Hashable, Equatable {
 
-    let red: UInt8
-    let green: UInt8
-    let blue: UInt8
+    public let red: UInt8
+    public let green: UInt8
+    public let blue: UInt8
 
     static var black: Self {
         .init(red: 0, green: 0, blue: 0)
@@ -34,13 +34,6 @@ struct Pixel: Hashable, Equatable {
 
     var isBlackOrWhite: Bool {
         isBlack || isWhite
-    }
-
-    var imageColor: ImageColor {
-        return ImageColor(red: CGFloat(red)/CGFloat(UInt8.max),
-                          green: CGFloat(green)/CGFloat(UInt8.max),
-                          blue: CGFloat(blue)/CGFloat(UInt8.max),
-                          alpha: 1)
     }
 
     func isDistinct(_ other: Pixel) -> Bool {

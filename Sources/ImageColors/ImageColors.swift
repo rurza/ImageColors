@@ -23,10 +23,10 @@ public enum ImageColorsError: Error {
 }
 
 public struct ImageColors {
-    public var background: ImageColor
-    public var primary: ImageColor
-    public var secondary: ImageColor
-    public var detail: ImageColor
+    public let background: ImageColor
+    public let primary: ImageColor?
+    public let secondary: ImageColor?
+    public let tertiary: ImageColor?
 }
 
 public enum ImageExtractQuality: CGFloat {
@@ -37,6 +37,7 @@ public enum ImageExtractQuality: CGFloat {
     case original = 0
 
     func newSize(from size: CGSize) -> CGSize {
+        guard self != .original else { return size }
         if size.width < size.height {
             let ratio = CGFloat(size.height) / CGFloat(size.width)
             return CGSize(width: self.rawValue / ratio, height: self.rawValue)
@@ -54,11 +55,16 @@ private struct ImageColorsCounter: Comparable, Equatable {
     let count: Int
 
     static func < (lhs: Self, rhs: Self) -> Bool {
-        lhs.count < rhs.count
+        if lhs.count == rhs.count {
+            return lhs.pixel.red < rhs.pixel.red
+            && lhs.pixel.green < rhs.pixel.green
+            && lhs.pixel.blue < rhs.pixel.blue
+        }
+        return lhs.count < rhs.count
     }
 
     static func == (lhs: Self, rhs: Self) -> Bool {
-        lhs.count == rhs.count
+        lhs.count == rhs.count && lhs.pixel == rhs.pixel
     }
 }
 
@@ -84,6 +90,7 @@ public extension CGImage {
                                                              height: height,
                                                              bitsPerPixel: expectedImageFormat.bitsPerPixel)
         defer { destinationImageFormatBuffer.free() }
+
         let imageFormatConverter = try vImageConverter.make(sourceFormat: sourceImageFormat,
                                                             destinationFormat: expectedImageFormat)
 
@@ -91,30 +98,30 @@ public extension CGImage {
 
         // Scale the image
         let newSize = quality.newSize(from: CGSize(width: width, height: height))
-        var destinationSizeBuffer = try vImage_Buffer(width: Int(newSize.width),
+        var finalImageBuffer = try vImage_Buffer(width: Int(newSize.width),
                                                       height: Int(newSize.height),
                                                       bitsPerPixel: expectedImageFormat.bitsPerPixel)
-        defer { destinationSizeBuffer.free() }
+        defer { finalImageBuffer.free() }
+
         let error = vImageScale_ARGB8888(&destinationImageFormatBuffer,
-                                         &destinationSizeBuffer,
+                                         &finalImageBuffer,
                                          nil,
                                          vImage_Flags(kvImageHighQualityResampling))
         guard error == kvImageNoError else { throw ImageColorsError.imageResizeError(error) }
 
         // Analyze pixels
-        let capacity = destinationSizeBuffer.rowBytes * Int(destinationSizeBuffer.height)
-        let data = destinationSizeBuffer.data.bindMemory(to: UInt8.self, capacity: capacity)
-        defer { data.deinitialize(count: capacity) }
+        let capacity = finalImageBuffer.rowBytes * Int(finalImageBuffer.height)
+        let data = finalImageBuffer.data.bindMemory(to: UInt8.self, capacity: capacity)
 
-        let width = Int(destinationSizeBuffer.width)
-        let height = Int(destinationSizeBuffer.height)
+        let width = Int(finalImageBuffer.width)
+        let height = Int(finalImageBuffer.height)
 
         var imageColors: Dictionary<Pixel, Int> = [:]
 
         for x in 0 ..< width {
             for y in 0 ..< height {
                 // 4 for as the numer of channels
-                let pixel: Int = Int(destinationSizeBuffer.rowBytes) * y + x * 4
+                let pixel: Int = Int(finalImageBuffer.rowBytes) * y + x * 4
                 let alpha = data[pixel]
                 if 50 <= alpha { // magic alpha number
                     let red = data[pixel+1]
@@ -125,7 +132,9 @@ public extension CGImage {
             }
         }
 
-        let threshold = Int(CGFloat(height) * 0.01)
+        data.deinitialize(count: capacity)
+
+        let threshold = Int(CGFloat(height) * CGFloat(width) * 0.05)
         var sortedColors: [ImageColorsCounter] = imageColors.keys
             .compactMap { pixel in
                 let count = imageColors[pixel]!
@@ -135,7 +144,7 @@ public extension CGImage {
                     return nil
                 }
             }
-            .sorted(by: <)
+            .sorted(by: >)
 
         var edgeColor: ImageColorsCounter
         if let first = sortedColors.first {
@@ -147,7 +156,7 @@ public extension CGImage {
         if edgeColor.pixel.isBlackOrWhite && sortedColors.count > 1 {
             for index in 1 ..< sortedColors.count {
                 let nextEdgeColor = sortedColors[index]
-                if Double(nextEdgeColor.count / edgeColor.count) > 0.3 {
+                if Double(nextEdgeColor.count) / Double(edgeColor.count) > 0.3 {
                     if !nextEdgeColor.pixel.isBlackOrWhite {
                         edgeColor = nextEdgeColor
                         break
@@ -161,18 +170,21 @@ public extension CGImage {
         let isBackgroundIsLight = !background.isDarkColor
         sortedColors = imageColors.keys
             .compactMap { pixel in
-                let darkerPixel = pixel.newWithSaturation(0.15)
-                if darkerPixel.isDarkColor == isBackgroundIsLight {
-                    let count = imageColors[pixel]!
-                    return ImageColorsCounter(pixel: darkerPixel, count: count)
+                let count = imageColors[pixel]!
+                if isBackgroundIsLight {
+                    if pixel.isDarkColor {
+                        return ImageColorsCounter(pixel: pixel, count: count)
+                    }
+                } else if !pixel.isDarkColor {
+                    return ImageColorsCounter(pixel: pixel, count: count)
                 }
                 return nil
             }
-            .sorted(by: <)
+            .sorted(by: >)
 
         var primary: Pixel? = nil
         var secondary: Pixel? = nil
-        var detail: Pixel? = nil
+        var tertiary: Pixel? = nil
 
         for colorsCounter in sortedColors {
             let color = colorsCounter.pixel
@@ -185,28 +197,19 @@ public extension CGImage {
                     continue
                 }
                 secondary = color
-            } else if detail == nil {
+            } else if tertiary == nil {
                 if !color.isContrastingTo(background) || !(secondary?.isDistinct(color) ?? false) || !(primary?.isDistinct(color) ?? false) {
                     continue
                 }
-                detail = color
+                tertiary = color
             }
-        }
-        let isBackgroundIsDark = !isBackgroundIsLight
-        if primary == nil {
-            primary = isBackgroundIsDark ? .white : .black
-        }
-        if secondary == nil {
-            secondary = isBackgroundIsDark ? .white : .black
-        }
-        if detail == nil {
-            detail = isBackgroundIsDark ? .white : .black
+            if primary != nil && secondary != nil && tertiary != nil { break }
         }
 
         return ImageColors(background: background.imageColor,
-                           primary: primary!.imageColor,
-                           secondary: secondary!.imageColor,
-                           detail: detail!.imageColor)
+                           primary: primary?.imageColor,
+                           secondary: secondary?.imageColor,
+                           tertiary: tertiary?.imageColor)
     }
 
 }

@@ -24,6 +24,7 @@ let package = Package(
             dependencies: []),
         .testTarget(
             name: "ImageColorsTests",
-            dependencies: ["ImageColors"]),
+            dependencies: ["ImageColors"],
+            exclude: ["artworks.sketch"]),
     ]
 )

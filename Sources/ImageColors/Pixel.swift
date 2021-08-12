@@ -6,7 +6,8 @@
 
 import Foundation
 
-struct Pixel: Hashable {
+struct Pixel: Hashable, Equatable {
+
     let red: UInt8
     let green: UInt8
     let blue: UInt8
@@ -36,9 +37,9 @@ struct Pixel: Hashable {
     }
 
     var imageColor: ImageColor {
-        return ImageColor(red: CGFloat(red/UInt8.max),
-                          green: CGFloat(green/UInt8.max),
-                          blue: CGFloat(blue/UInt8.max),
+        return ImageColor(red: CGFloat(red)/CGFloat(UInt8.max),
+                          green: CGFloat(green)/CGFloat(UInt8.max),
+                          blue: CGFloat(blue)/CGFloat(UInt8.max),
                           alpha: 1)
     }
 

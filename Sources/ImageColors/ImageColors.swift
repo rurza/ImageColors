@@ -9,14 +9,6 @@
 import Accelerate
 import CoreGraphics
 
-#if os(macOS)
-import Cocoa
-public typealias ImageColor = NSColor
-#else
-import UIKit
-public typealias ImageColor = UIColor
-#endif
-
 public enum ImageColorsError: Error {
     case imageResizeError(vImage_Error)
 }
@@ -69,7 +61,7 @@ private struct ImageColorsCounter: Comparable, Equatable {
 
 public extension CGImage {
 
-    @available(iOS 15, OSX 12.0, tvOS 15, *)
+    @available(iOS 15, macOS 12.0, tvOS 15, *)
     func extractColors(withQuality quality: ImageExtractQuality = .original) async throws -> ImageColors {
         try _extractColors(withQuality: quality)
     }

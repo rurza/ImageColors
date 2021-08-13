@@ -4,6 +4,7 @@
 //  Created by Adam Różyński on 12/08/2021.
 //
 
+#if os(macOS)
 import XCTest
 @testable import ImageColors
 
@@ -83,3 +84,4 @@ final class ImageColorsTests: XCTestCase {
     }
 
 }
+#endif

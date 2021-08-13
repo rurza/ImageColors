@@ -6,11 +6,35 @@
 
 import Foundation
 
+#if os(macOS)
+import Cocoa
+#else
+import UIKit
+#endif
+
 public struct Pixel: Hashable, Equatable {
 
     public let red: UInt8
     public let green: UInt8
     public let blue: UInt8
+
+#if os(iOS)
+    public var uiColor: UIColor {
+        UIColor(red: CGFloat(red)/CGFloat(UInt8.max),
+                green: CGFloat(green)/CGFloat(UInt8.max),
+                blue: CGFloat(blue)/CGFloat(UInt8.max),
+                alpha: 1)
+    }
+#endif
+
+#if os(macOS)
+    public var nsColor: NSColor {
+        NSColor(red: CGFloat(red)/CGFloat(UInt8.max),
+                green: CGFloat(green)/CGFloat(UInt8.max),
+                blue: CGFloat(blue)/CGFloat(UInt8.max),
+                alpha: 1)
+    }
+#endif
 
     static var black: Self {
         .init(red: 0, green: 0, blue: 0)
@@ -146,7 +170,7 @@ public struct Pixel: Hashable, Equatable {
             newBlue = 0
         }
         let match = brightness - chroma
-
+        
         newRed = round((newRed + match) * 255)
         newGreen = round((newGreen + match) * 255)
         newBlue = round((newBlue + match) * 255)

@@ -14,7 +14,6 @@ import Cocoa
 public typealias ImageColor = NSColor
 #else
 import UIKit
-import XCTest
 public typealias ImageColor = UIColor
 #endif
 

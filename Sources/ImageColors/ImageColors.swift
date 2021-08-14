@@ -63,10 +63,14 @@ public extension CGImage {
 
     @available(iOS 15, macOS 12.0, tvOS 15, *)
     func extractColors(withQuality quality: ImageExtractQuality = .original) async throws -> ImageColors {
-        try _extractColors(withQuality: quality)
+        return try await withCheckedThrowingContinuation { continuation in
+            extractColors(withQuality: quality) { result in
+                continuation.resume(with: result)
+            }
+        }
     }
 
-    func extractColors(withQuality quality: ImageExtractQuality = .original, queue: DispatchQueue, handler: @escaping (Result<ImageColors, Error>) -> Void) {
+    func extractColors(withQuality quality: ImageExtractQuality = .original, queue: DispatchQueue = .global(qos: .utility), _ handler: @escaping (Result<ImageColors, Error>) -> Void) {
         queue.async {
             do {
                 let colors = try self._extractColors(withQuality: quality)

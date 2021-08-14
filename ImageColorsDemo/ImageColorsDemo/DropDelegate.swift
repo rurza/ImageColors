@@ -31,7 +31,7 @@ class ImageDropDelegate: DropDelegate, ObservableObject {
                 DispatchQueue.main.async {
                     if let url = url, let data = try? Data(contentsOf: url), let image = NSImage(data: data) {
                         self.imageData = data
-                        image.cgImage(forProposedRect: nil, context: nil, hints: nil)?.extractColors(queue: DispatchQueue.global(qos: .userInitiated), handler: { result in
+                        image.cgImage(forProposedRect: nil, context: nil, hints: nil)?.extractColors(queue: DispatchQueue.global(qos: .userInitiated)) { result in
                             switch result {
                             case .success(let imageColors):
                                 self.background = imageColors.background
@@ -42,7 +42,7 @@ class ImageDropDelegate: DropDelegate, ObservableObject {
                                 self.error = error
                             }
                             self.loading = false
-                        })
+                        }
                     } else {
                         self.error = error
                         self.imageData = nil

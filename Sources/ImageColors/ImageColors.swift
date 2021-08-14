@@ -145,7 +145,7 @@ public extension CGImage {
 
         data.deinitialize(count: capacity)
 
-        let threshold = Int(CGFloat(height) * CGFloat(width) * 0.01)
+        let threshold = Int(CGFloat(height) * CGFloat(width) * 0.001)
         var sortedColors: [ImageColorsCounter] = imageColors.keys
             .compactMap { pixel in
                 let count = imageColors[pixel]!

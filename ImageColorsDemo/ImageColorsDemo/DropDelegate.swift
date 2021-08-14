@@ -27,7 +27,7 @@ class ImageDropDelegate: DropDelegate, ObservableObject {
         loading = true
         error = nil
         if let itemProvider = info.itemProviders(for: [.fileURL]).first {
-            itemProvider.loadObject(ofClass: URL.self) { url, error in
+            _ = itemProvider.loadObject(ofClass: URL.self) { url, error in
                 DispatchQueue.main.async {
                     if let url = url, let data = try? Data(contentsOf: url), let image = NSImage(data: data) {
                         self.imageData = data
@@ -50,9 +50,8 @@ class ImageDropDelegate: DropDelegate, ObservableObject {
                     }
                 }
             }
-                }
+        }
         return true
     }
-
 
 }

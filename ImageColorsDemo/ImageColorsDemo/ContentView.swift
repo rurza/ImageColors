@@ -14,56 +14,59 @@ struct ContentView: View {
 
     var body: some View {
         HStack {
-
             GroupBox {
-                if let data = dropDelegate.imageData {
-                    Image(nsImage: NSImage(data: data)!)
-                        .frame(minWidth: 200, minHeight: 300, idealHeight: .infinity)
-                }  else {
-                    Text("Drop image here")
-                        .frame(minWidth: 200, minHeight: 300, idealHeight: .infinity)
+                Group {
+                    if let data = dropDelegate.imageData {
+                        Image(nsImage: NSImage(data: data)!)
+                            .resizable()
+                            .scaledToFit()
+                    }  else {
+                        Text("Drop image here")
+                    }
                 }
+                .padding()
+                .frame(minWidth: 200, minHeight: 300, idealHeight: .infinity)
+
             }
             .onDrop(of: [.image, .fileURL], delegate: dropDelegate)
-            if dropDelegate.loading {
-                ProgressView()
-            } else {
-                HStack {
-                    VStack {
-                        Circle()
-                            .frame(width: 50, height: 50)
-                            .foregroundColor(Color(dropDelegate.background?.nsColor ?? .clear))
-                        Text("Background")
+            Group {
+                if dropDelegate.loading {
+                    ProgressView()
+                        .scaleEffect(0.5)
+                } else if dropDelegate.background != nil {
+                    HStack(alignment: .top) {
+                        ColorView(color: dropDelegate.background, title: "Background")
+                        ColorView(color: dropDelegate.primary, title: "Primary")
+                        ColorView(color: dropDelegate.secondary, title: "Secondary")
+                        ColorView(color: dropDelegate.tertiary, title: "Tertiary")
                     }
-                    VStack {
-                        Circle()
-                            .frame(width: 50, height: 50)
-                            .foregroundColor(Color(dropDelegate.primary?.nsColor ?? .clear))
-                        Text("Primary")
-                    }
-                    VStack {
-                        Circle()
-                            .frame(width: 50, height: 50)
-                            .foregroundColor(Color(dropDelegate.secondary?.nsColor ?? .clear))
-                        Text("Secondary")
-                    }
-                    VStack {
-                        Circle()
-                            .frame(width: 50, height: 50)
-                            .foregroundColor(Color(dropDelegate.tertiary?.nsColor ?? .clear))
-                        Text("Tertiary")
-                    }
+                } else {
+                    Spacer()
                 }
-                .frame(height: 100)
             }
+            .frame(width: 300)
         }
         .padding()
-
     }
 }
 
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
         ContentView(dropDelegate: ImageDropDelegate())
+    }
+}
+
+struct ColorView: View {
+
+    let color: Pixel?
+    let title: String
+
+    var body: some View {
+        VStack {
+            Circle()
+                .frame(width: 50, height: 50)
+                .foregroundColor(Color(color?.nsColor ?? .clear))
+            Text(title)
+        }
     }
 }

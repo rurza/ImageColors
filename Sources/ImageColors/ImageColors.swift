@@ -47,9 +47,9 @@ private struct ImageColorsCounter: Comparable, Equatable {
 
     static func < (lhs: Self, rhs: Self) -> Bool {
         if lhs.count == rhs.count {
-            return lhs.pixel.red < rhs.pixel.red
-            && lhs.pixel.green < rhs.pixel.green
-            && lhs.pixel.blue < rhs.pixel.blue
+            return lhs.pixel.red > rhs.pixel.red
+            && lhs.pixel.green > rhs.pixel.green
+            && lhs.pixel.blue > rhs.pixel.blue
         }
         return lhs.count < rhs.count
     }
@@ -149,15 +149,10 @@ public extension CGImage {
 
         data.deinitialize(count: capacity)
 
-        let threshold = Int(CGFloat(height) * CGFloat(width) * 0.001)
         var sortedColors: [ImageColorsCounter] = imageColors.keys
-            .compactMap { pixel in
+            .map { pixel in
                 let count = imageColors[pixel]!
-                if count > threshold {
-                    return ImageColorsCounter(pixel: pixel, count: count)
-                } else {
-                    return nil
-                }
+                return ImageColorsCounter(pixel: pixel, count: count)
             }
             .sorted(by: >)
 

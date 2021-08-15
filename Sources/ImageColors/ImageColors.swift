@@ -62,7 +62,7 @@ private struct ImageColorsCounter: Comparable, Equatable {
 public extension CGImage {
 
     @available(iOS 15, macOS 12.0, tvOS 15, *)
-    func extractColors(withQuality quality: ImageExtractQuality = .original) async throws -> ImageColors {
+    func extractColors(withQuality quality: ImageExtractQuality = .low) async throws -> ImageColors {
         return try await withCheckedThrowingContinuation { continuation in
             extractColors(withQuality: quality) { result in
                 continuation.resume(with: result)
@@ -70,7 +70,7 @@ public extension CGImage {
         }
     }
 
-    func extractColors(withQuality quality: ImageExtractQuality = .original, queue: DispatchQueue = .global(qos: .utility), _ handler: @escaping (Result<ImageColors, Error>) -> Void) {
+    func extractColors(withQuality quality: ImageExtractQuality = .low, queue: DispatchQueue = .global(qos: .utility), _ handler: @escaping (Result<ImageColors, Error>) -> Void) {
         queue.async {
             do {
                 let colors = try self._extractColors(withQuality: quality)
@@ -85,7 +85,7 @@ public extension CGImage {
         }
     }
 
-    internal func _extractColors(withQuality quality: ImageExtractQuality = .original) throws -> ImageColors {
+    internal func _extractColors(withQuality quality: ImageExtractQuality) throws -> ImageColors {
         let expectedImageFormat = vImage_CGImageFormat(
             bitsPerComponent: 8,
             bitsPerPixel: 32,
@@ -156,6 +156,21 @@ public extension CGImage {
             }
             .sorted(by: >)
 
+        sortedColors = sortedColors.reduce(into: []) { partialResult, colorsCounter in
+            var resultsHaveSimilarColor = false
+            for (index, result) in partialResult.enumerated() {
+                if !result.pixel.isDistinct(colorsCounter.pixel) {
+                    resultsHaveSimilarColor = true
+                    let copy = ImageColorsCounter(pixel: result.pixel, count: result.count + colorsCounter.count)
+                    partialResult[index] = copy
+                }
+            }
+            if !resultsHaveSimilarColor {
+                partialResult.append(colorsCounter)
+            }
+        }
+        .sorted(by: >)
+
         var edgeColor: ImageColorsCounter
         if let first = sortedColors.first {
             edgeColor = first
@@ -177,22 +192,6 @@ public extension CGImage {
             }
         }
         let background = edgeColor.pixel
-        let isBackgroundIsLight = !background.isDarkColor
-        sortedColors = imageColors.keys
-            .compactMap { pixel in
-                let count = imageColors[pixel]!
-                if pixel.isContrastingTo(background) {
-                    return ImageColorsCounter(pixel: pixel, count: count)
-                } else if isBackgroundIsLight {
-                    if pixel.isDarkColor {
-                        return ImageColorsCounter(pixel: pixel, count: count)
-                    }
-                } else if !pixel.isDarkColor {
-                    return ImageColorsCounter(pixel: pixel, count: count)
-                }
-                return nil
-            }
-            .sorted(by: >)
 
         var primary: Pixel? = nil
         var secondary: Pixel? = nil
@@ -201,16 +200,16 @@ public extension CGImage {
         for colorsCounter in sortedColors {
             let color = colorsCounter.pixel
             if primary == nil {
-                if color.isContrastingTo(background) {
+                if color.isContrastingTo(background) || color.isDistinct(background) {
                     primary = color
                 }
             } else if secondary == nil {
-                if !color.isContrastingTo(background) || !(primary?.isDistinct(color) ?? false) {
+                if !(primary?.isDistinct(color) ?? false) || !color.isDistinct(background) {
                     continue
                 }
                 secondary = color
             } else if tertiary == nil {
-                if !color.isContrastingTo(background) || !(secondary?.isDistinct(color) ?? false) || !(primary?.isDistinct(color) ?? false) {
+                if  !(secondary?.isDistinct(color) ?? false) || !(primary?.isDistinct(color) ?? false) || !color.isDistinct(background) {
                     continue
                 }
                 tertiary = color

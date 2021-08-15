@@ -18,6 +18,13 @@ class ImageDropDelegate: DropDelegate, ObservableObject {
     @Published var secondary: Pixel?
     @Published var tertiary: Pixel?
     @Published var error: Error?
+    var quality: ImageExtractQuality = .original {
+        didSet {
+            if let data = imageData {
+                extractColorsFromImageData(data)
+            }
+        }
+    }
 
     func validateDrop(info: DropInfo) -> Bool {
         info.hasItemsConforming(to: [.fileURL])
@@ -29,20 +36,9 @@ class ImageDropDelegate: DropDelegate, ObservableObject {
         if let itemProvider = info.itemProviders(for: [.fileURL]).first {
             _ = itemProvider.loadObject(ofClass: URL.self) { url, error in
                 DispatchQueue.main.async {
-                    if let url = url, let data = try? Data(contentsOf: url), let image = NSImage(data: data) {
+                    if let url = url, let data = try? Data(contentsOf: url) {
                         self.imageData = data
-                        image.cgImage(forProposedRect: nil, context: nil, hints: nil)?.extractColors(queue: DispatchQueue.global(qos: .userInitiated)) { result in
-                            switch result {
-                            case .success(let imageColors):
-                                self.background = imageColors.background
-                                self.primary = imageColors.primary
-                                self.secondary = imageColors.secondary
-                                self.tertiary = imageColors.tertiary
-                            case .failure(let error):
-                                self.error = error
-                            }
-                            self.loading = false
-                        }
+                        self.extractColorsFromImageData(data)
                     } else {
                         self.error = error
                         self.imageData = nil
@@ -52,6 +48,27 @@ class ImageDropDelegate: DropDelegate, ObservableObject {
             }
         }
         return true
+    }
+
+    func extractColorsFromImageData(_ imageData: Data) {
+        loading = true
+        error = nil
+        if let image = NSImage(data: imageData) {
+            image.cgImage(forProposedRect: nil, context: nil, hints: nil)?
+                .extractColors(withQuality: quality,
+                               queue: DispatchQueue.global(qos: .userInitiated)) { result in
+                    switch result {
+                    case .success(let imageColors):
+                        self.background = imageColors.background
+                        self.primary = imageColors.primary
+                        self.secondary = imageColors.secondary
+                        self.tertiary = imageColors.tertiary
+                    case .failure(let error):
+                        self.error = error
+                    }
+                    self.loading = false
+                }
+        }
     }
 
 }

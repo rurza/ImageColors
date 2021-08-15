@@ -8,6 +8,18 @@
 import SwiftUI
 import ImageColors
 
+enum Quality: String, Identifiable, CaseIterable {
+    case original
+    case lowest
+    case low
+    case medium
+    case high
+
+    var id: String {
+        self.rawValue
+    }
+}
+
 struct ContentView: View {
 
     @ObservedObject var dropDelegate: ImageDropDelegate
@@ -30,17 +42,26 @@ struct ContentView: View {
             }
             .onDrop(of: [.image, .fileURL], delegate: dropDelegate)
             Group {
-                if dropDelegate.loading {
-                    ProgressView()
-                        .scaleEffect(0.5)
-                } else if dropDelegate.background != nil {
-                    HStack(alignment: .top) {
-                        ColorView(color: dropDelegate.background, title: "Background")
-                        ColorView(color: dropDelegate.primary, title: "Primary")
-                        ColorView(color: dropDelegate.secondary, title: "Secondary")
-                        ColorView(color: dropDelegate.tertiary, title: "Tertiary")
+                VStack {
+                    Picker("Quality", selection: $dropDelegate.quality) {
+                        Text(Quality.original.rawValue).tag(ImageExtractQuality.original)
+                        Text(Quality.lowest.rawValue).tag(ImageExtractQuality.lowest)
+                        Text(Quality.low.rawValue).tag(ImageExtractQuality.low)
+                        Text(Quality.medium.rawValue).tag(ImageExtractQuality.medium)
+                        Text(Quality.high.rawValue).tag(ImageExtractQuality.high)
                     }
-                } else {
+                    Spacer()
+                    if dropDelegate.loading {
+                        ProgressView()
+                            .scaleEffect(0.5)
+                    } else if dropDelegate.background != nil {
+                        HStack(alignment: .top) {
+                            ColorView(color: dropDelegate.background, title: "Background")
+                            ColorView(color: dropDelegate.primary, title: "Primary")
+                            ColorView(color: dropDelegate.secondary, title: "Secondary")
+                            ColorView(color: dropDelegate.tertiary, title: "Tertiary")
+                        }
+                    }
                     Spacer()
                 }
             }

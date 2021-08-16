@@ -46,11 +46,6 @@ private struct ImageColorsCounter: Comparable, Equatable {
     let count: Int
 
     static func < (lhs: Self, rhs: Self) -> Bool {
-        if lhs.count == rhs.count {
-            return lhs.pixel.red > rhs.pixel.red
-            && lhs.pixel.green > rhs.pixel.green
-            && lhs.pixel.blue > rhs.pixel.blue
-        }
         return lhs.count < rhs.count
     }
 
@@ -148,21 +143,23 @@ public extension CGImage {
         }
 
         data.deinitialize(count: capacity)
-
+        
         var sortedColors: [ImageColorsCounter] = imageColors.keys
             .map { pixel in
                 let count = imageColors[pixel]!
                 return ImageColorsCounter(pixel: pixel, count: count)
             }
             .sorted(by: >)
-
+        
         sortedColors = sortedColors.reduce(into: []) { partialResult, colorsCounter in
             var resultsHaveSimilarColor = false
             for (index, result) in partialResult.enumerated() {
                 if !result.pixel.isDistinct(colorsCounter.pixel) {
                     resultsHaveSimilarColor = true
-                    let copy = ImageColorsCounter(pixel: result.pixel, count: result.count + colorsCounter.count)
+                    let copy = ImageColorsCounter(pixel: result.pixel,
+                                                  count: result.count + colorsCounter.count)
                     partialResult[index] = copy
+                    break
                 }
             }
             if !resultsHaveSimilarColor {
@@ -170,6 +167,7 @@ public extension CGImage {
             }
         }
         .sorted(by: >)
+
 
         var edgeColor: ImageColorsCounter
         if let first = sortedColors.first {
@@ -200,7 +198,7 @@ public extension CGImage {
         for colorsCounter in sortedColors {
             let color = colorsCounter.pixel
             if primary == nil {
-                if color.isContrastingTo(background) || color.isDistinct(background) {
+                if color.isContrastingTo(background) {
                     primary = color
                 }
             } else if secondary == nil {

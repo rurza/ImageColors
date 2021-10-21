@@ -5,6 +5,7 @@
 //
 
 import Foundation
+import SwiftUI
 
 #if os(macOS)
 import Cocoa
@@ -35,6 +36,13 @@ public struct Pixel: Hashable, Equatable {
                 alpha: 1)
     }
 #endif
+
+    public var swiftUIColor: SwiftUI.Color {
+        let red: Double = (Double(red) / Double(UInt8.max))
+        let green: Double = (Double(green) / Double(UInt8.max))
+        let blue: Double = (Double(blue) / Double(UInt8.max))
+        return SwiftUI.Color.init(red: red, green: green, blue: blue, opacity: 1)
+    }
 
     static var black: Self {
         .init(red: 0, green: 0, blue: 0)
